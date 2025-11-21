@@ -1,0 +1,116 @@
+# ============================================================================
+# Makefile: Build → Deploy → Run (ARM aarch64) for cmmds application
+# ============================================================================
+
+# ----------------------------
+# Toolchain
+# ----------------------------
+TOOLCHAIN_ROOT = $(HOME)/arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-linux-gnu
+CC = $(TOOLCHAIN_ROOT)/bin/aarch64-none-linux-gnu-g++
+
+# ----------------------------
+# Directories
+# ----------------------------
+SRC_DIR = ./src
+INC_DIR = ./inc
+LIB_DIR = ./libs
+BUILD_DIR = ./build_arm
+BIN_DIR = ./bin
+SYSROOT = $(HOME)/arm_sysroot
+
+# ----------------------------
+# Source Files
+# ----------------------------
+MAIN_SRC = sample.cpp
+JSON_SRC = $(SRC_DIR)/JsonEventServer.cpp
+
+OBJS = $(BUILD_DIR)/application_cmmds.o \
+       $(BUILD_DIR)/JsonEventServer.o
+
+# ----------------------------
+# Output Binary
+# ----------------------------
+TARGET = $(BIN_DIR)/samples_arm
+
+# ----------------------------
+# Include Directories
+# ----------------------------
+INCLUDES = -I$(INC_DIR) \
+           -I$(INC_DIR)/nlohmann \
+           -I$(LIB_DIR)/onnx_Arm/include \
+           -I$(SYSROOT)/usr/include
+
+# ----------------------------
+# Library Paths
+# ----------------------------
+LIB_PATHS = -L$(LIB_DIR) \
+            -L$(LIB_DIR)/onnx_Arm/lib \
+            -L$(SYSROOT)/usr/lib
+
+# ----------------------------
+# Libraries
+# ----------------------------
+LIBS = -lvosk \
+       -lonnxruntime \
+       -lasound \
+       -lpthread \
+       -ldl \
+       -lm
+
+# ----------------------------
+# Compiler Flags
+# ----------------------------
+CXXFLAGS = -std=c++17 -O2 -Wall \
+           -march=armv8-a -mtune=cortex-a53 \
+           $(INCLUDES)
+
+# ----------------------------
+# Linker Flags
+# ----------------------------
+LDFLAGS = $(LIB_PATHS) \
+          -Wl,-rpath,./libs \
+          -Wl,-rpath,/usr/lib
+
+# ============================================================================
+# Build Rules
+# ============================================================================
+
+all: directories $(TARGET)
+	@echo "✓ ARM Build Completed: $(TARGET)"
+	@file $(TARGET)
+
+directories:
+	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BIN_DIR)
+
+# ----------------------------
+# Compile Sources
+# ----------------------------
+$(BUILD_DIR)/application_cmmds.o: $(MAIN_SRC)
+	@echo "Compiling $<"
+	$(CC) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/JsonEventServer.o: $(JSON_SRC)
+	@echo "Compiling $<"
+	$(CC) $(CXXFLAGS) -c $< -o $@
+
+# ----------------------------
+# Link Final Binary
+# ----------------------------
+$(TARGET): $(OBJS)
+	@echo "Linking $(TARGET)"
+	$(CC) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
+
+
+# ============================================================================
+# Clean
+# ============================================================================
+
+clean:
+	rm -rf $(BUILD_DIR) $(TARGET)
+	@echo "✓ Clean complete"
+
+# ============================================================================
+# END
+# ============================================================================
+
